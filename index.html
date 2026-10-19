@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yuragim Sensan ❤️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<style>
+:root{
+  --rose:#ff4d8d; --rose-2:#ff7aa8; --rose-3:#ffc2d9; --ruby:#e11d48;
+  --ink:#14030f; --glass:rgba(30,6,26,.72); --line:rgba(255,140,190,.32);
+  --gold:#ffd27a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;color:#fff;
+  background:radial-gradient(ellipse at 50% 35%,#35092b 0%,#18041a 55%,#08010b 100%) fixed;
+  user-select:none;-webkit-user-select:none;
+}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none}
+.cursive{font-family:'Great Vibes',cursive;font-weight:400}
+.serif{font-family:'Playfair Display',serif}
+.glow{text-shadow:0 0 16px rgba(255,77,141,.8),0 0 35px rgba(255,41,117,.5)}
+
+#webgl{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(5,0,8,.7) 100%)}
+
+/* ---------- BUTUN EKRANDA BOSILADIGAN UCHUVCHI RASMLAR (ENG YUQORI QATLAMLARDA) ---------- */
+#flying-canvas{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:45; /* UI ustidan uchib yuradi va hamma joyda bosiladi */
+  pointer-events:none;overflow:hidden;
+}
+.floating-photo{
+  position:absolute;pointer-events:auto !important;cursor:pointer;
+  width:72px;height:72px;border-radius:20px;overflow:hidden;
+  border:2.5px solid rgba(255,170,210,.9);
+  box-shadow:0 10px 24px rgba(255,40,110,.5);
+  transition:transform .2s ease, opacity .35s ease;
+  will-change:left, top;
+}
+.floating-photo img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.floating-photo:hover{
+  transform:scale(1.15) !important;
+  box-shadow:0 14px 34px rgba(255,70,140,.9);
+  z-index:60 !important;
+}
+.floating-photo .photo-badge{
+  position:absolute;bottom:3px;right:3px;font-size:10px;font-weight:800;
+  background:rgba(0,0,0,.75);padding:1px 6px;border-radius:8px;color:var(--rose-3);
+  pointer-events:none;
+}
+.floating-photo.hidden-photo{
+  opacity:0!important;
+  pointer-events:none!important;
+  transform:scale(0)!important;
+}
+
+/* ---------- INTRO POPUP ---------- */
+.intro{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(55,8,42,.98),rgba(8,1,11,.99));
+  transition:opacity 1s ease,visibility 1s}
+.intro.gone{opacity:0;visibility:hidden;pointer-events:none}
+.intro-card{max-width:430px;width:100%;padding:34px 26px;border-radius:30px;text-align:center}
+.beat-orb{width:86px;height:86px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;font-size:42px;
+  background:radial-gradient(circle at 35% 30%,rgba(255,120,170,.45),rgba(255,40,100,.15));
+  box-shadow:0 0 42px rgba(255,50,110,.55);animation:heartbeat 1.5s infinite}
+@keyframes heartbeat{0%,70%,100%{transform:scale(1)}14%{transform:scale(1.16)}28%{transform:scale(1.05)}42%{transform:scale(1.24)}}
+.intro h1{margin:0 0 8px;font-size:clamp(44px,12vw,60px);color:var(--rose-3);line-height:1}
+.intro p{margin:8px 0;color:rgba(255,220,235,.85);font-size:14.5px;font-weight:300;line-height:1.6}
+.cta{
+  width:100%;padding:15px 22px;margin-top:16px;border-radius:18px;font-weight:700;font-size:16px;color:#fff;
+  background:linear-gradient(110deg,#e11d48,#ff3d86 50%,#ff6aa3);
+  box-shadow:0 0 30px rgba(244,63,94,.6);transition:transform .25s,box-shadow .25s;
+}
+.cta:hover{transform:scale(1.03);box-shadow:0 0 45px rgba(244,63,94,.9)}
+
+/* ---------- O'YIN MAYDONI VA KARTA ---------- */
+.glass{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.55)}
+.ui{position:relative;z-index:20;height:100vh;height:100dvh;display:flex;flex-direction:column;justify-content:space-between;padding:16px;pointer-events:none}
+.ui>*{pointer-events:auto}
+
+.stage-main{flex:1;display:flex;align-items:center;justify-content:center;max-width:1100px;width:100%;margin:0 auto}
+.card{width:100%;max-width:500px;padding:26px 20px;border-radius:30px;text-align:center;position:relative}
+.badge{width:60px;height:60px;border-radius:18px;margin:0 auto 10px;display:grid;place-items:center;font-size:30px;
+  background:linear-gradient(135deg,#7c3aed,#ff3d86);box-shadow:0 10px 28px rgba(255,61,134,.45)}
+.eyebrow{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--rose-2)}
+.card h2{margin:0 0 8px;font-size:clamp(20px,5.4vw,25px);line-height:1.3;font-weight:800}
+.card h2 em{font-style:normal;color:var(--gold);text-decoration:underline wavy rgba(255,210,122,.8)}
+.sub{margin:0 0 14px;font-size:13px;line-height:1.5;font-weight:300;color:rgba(255,215,232,.85)}
+
+/* ARENA (Yo'q tugmasi doim Ha dan alohida joyda qochadi) */
+.arena{position:relative;height:165px;width:100%;border-radius:20px;background:rgba(0,0,0,.25);border:1px dashed rgba(255,140,190,.3);overflow:hidden}
+.yes{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);padding:13px 22px;border-radius:16px;
+  font-weight:700;font-size:14.5px;z-index:2;background:linear-gradient(110deg,#10b981,#ff3d86 55%,#ff6aa3);
+  box-shadow:0 0 25px rgba(244,63,94,.55);transition:transform .2s ease,box-shadow .2s;
+}
+.yes:hover{box-shadow:0 0 40px rgba(244,63,94,.95)}
+.no{
+  position:absolute;right:22px;top:50%;transform:translateY(-50%);padding:12px 20px;border-radius:16px;
+  font-size:13px;font-weight:600;color:var(--rose-3);z-index:10;white-space:nowrap;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);
+  transition:left .22s cubic-bezier(.34,1.56,.64,1),top .22s cubic-bezier(.34,1.56,.64,1),transform .2s;
+}
+
+.step{display:none}
+.step.on{display:block;animation:stepIn .45s cubic-bezier(.2,.9,.3,1) both}
+@keyframes stepIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ---------- 2 TA ALOHIDA VIP BILET ---------- */
+.tickets-container{display:flex;flex-direction:column;gap:10px;margin:12px 0;max-height:48vh;overflow-y:auto;padding-right:4px}
+.ticket{padding:13px 15px;border-radius:18px;text-align:left;position:relative}
+.ticket-dragon{
+  background:linear-gradient(120deg,rgba(88,28,135,.7),rgba(190,24,93,.65));
+  border:2px dashed rgba(255,150,195,.6);
+}
+.ticket-perashka{
+  background:linear-gradient(120deg,rgba(180,83,9,.7),rgba(217,119,6,.65));
+  border:2px dashed rgba(255,210,122,.7);
+}
+.tk-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.2);font-size:12.5px;font-weight:800}
+.tk-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:12px;margin-top:8px}
+.tk-grid small{display:block;font-size:9px;text-transform:uppercase;color:rgba(255,230,240,.75)}
+
+/* Bottom Hisoblagich */
+.counter{padding:10px 14px;border-radius:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;max-width:850px;margin:0 auto}
+.cells{display:flex;gap:6px}
+.cell{min-width:46px;padding:5px 6px;border-radius:10px;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,150,195,.2)}
+.cell b{display:block;font-size:16px;font-weight:800;line-height:1.1}
+.cell span{font-size:9px;color:var(--rose-2);text-transform:uppercase}
+
+/* ---------- RASM MODAL OYNASI (ENG BALAND QATLAM) ---------- */
+.photo-modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,0,8,.88);backdrop-filter:blur(10px)}
+.photo-modal.open{display:flex;animation:stepIn .35s ease both}
+.photo-card{max-width:480px;width:100%;border-radius:28px;overflow:hidden;position:relative;padding:18px}
+.photo-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.65);font-size:16px;display:grid;place-items:center;z-index:2}
+.photo-img-box{width:100%;height:290px;border-radius:20px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}
+.photo-img-box img{width:100%;height:100%;object-fit:contain}
+.photo-info{margin-top:14px;text-align:center}
+.photo-info h3{margin:0 0 6px;font-size:21px;color:var(--rose-3)}
+.photo-info p{margin:0;font-size:14.5px;line-height:1.65;color:rgba(255,230,240,.95);font-family:'Playfair Display',serif;font-style:italic}
+
+.music-toggle{position:fixed;bottom:16px;right:16px;z-index:90;padding:10px 16px;border-radius:999px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+
+#toast{position:fixed;left:50%;bottom:26px;z-index:300;transform:translate(-50%,20px);padding:10px 22px;border-radius:999px;font-size:13.5px;background:rgba(40,8,32,.92);border:1px solid rgba(255,130,180,.4);opacity:0;pointer-events:none;transition:.3s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<canvas id="webgl"></canvas>
+<div class="vignette"></div>
+
+<!-- MUSIQA -->
+<audio id="bg-audio" loop preload="auto">
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- HAR XIL JOYLARDA UCHIB YURUVCHI VA HAMMA JOYDA BOSILADIGAN RASMLAR -->
+<div id="flying-canvas"></div>
+
+<!-- INTRO OYNASI -->
+<div id="intro" class="intro">
+  <div class="intro-card glass">
+    <div class="beat-orb">❤️</div>
+    <h1 class="cursive glow">Faqat Sen Uchun</h1>
+    <p>Senga atalgan kichik bir romantik sir va reja bor… 🐉🥟💕</p>
+    <p style="font-size:12px;color:var(--rose-2);margin-bottom:18px;">2025-yil 20-sentyabrdan boshlangan baxtimiz ✨</p>
+    <button id="start-btn" class="cta">Yurakni ochish &amp; Boshlash 🎶</button>
+  </div>
+</div>
+
+<!-- ASOSIY O'YIN MAYDONI -->
+<div class="ui">
+  <div style="font-size:12px;color:rgba(255,200,225,.75);text-align:center">Uchayotgan xotira-rasmlarimizni tutib ko'r! 📸✨</div>
+
+  <main class="stage-main">
+    <section class="card glass" id="quest">
+      
+      <!-- 1-SAVOL: DRAGON TAKLIFI -->
+      <div class="step on" id="step-1">
+        <div class="badge">🐉</div>
+        <p class="eyebrow">1-maxsus taklifnoma</p>
+        <h2>Ertaga <em>Dragon</em>ga men bilan birga uchasanmi? ✨</h2>
+        <p class="sub">Eng baland nuqtada qo'lingdan mahkam ushlab, butun dunyoga baqiramiz!</p>
+        <div class="arena" id="arena-1">
+          <button class="yes" id="yes-1">Ha! Jonim bilan 🥰</button>
+          <button class="no" id="no-1">Yo'q 😜</button>
+        </div>
+      </div>
+
+      <!-- 2-SAVOL: PERASHKA TAKLIFI -->
+      <div class="step" id="step-2">
+        <div class="badge" style="background:linear-gradient(135deg,#f59e0b,#ea580c)">🥟</div>
+        <p class="eyebrow">2-mazali taklif</p>
+        <h2>Dragon'dan keyin <em>perashka</em> yeyishga boramizmi? 😋✨</h2>
+        <p class="sub">Issiqina, qarsildoq perashkalarni birga yeb, choy ichib mazza qilamiz!</p>
+        <div class="arena" id="arena-2">
+          <button class="yes" id="yes-2">Ha! Albatta boramiz 🥟</button>
+          <button class="no" id="no-2">Yo'q 🙈</button>
+        </div>
+      </div>
+
+      <!-- 3-SAVOL: KO'PALA SEVASANMI? -->
+      <div class="step" id="step-3">
+        <div class="badge" style="background:linear-gradient(135deg,#f43f5e,#dc2626)">❤️</div>
+        <p class="eyebrow">Eng muhim savol</p>
+        <h2>Meni <em>koooooooooooooooooooooooopala</em> sevasanmi? 💕</h2>
+        <p class="sub">Yuragingdan javob ber, chunki butun borlig'im faqat sening sevging bilan tirik…</p>
+        <div class="arena" id="arena-3">
+          <button class="yes" id="yes-3">Ha, koooooooooop! 💕</button>
+          <button class="no" id="no-3">Yo'q 😜</button>
+        </div>
+      </div>
+
+      <!-- FINAL: 2 TA ALOHIDA VIP BILET -->
+      <div class="step" id="step-4">
+        <div style="font-size:38px">🐉🥟🎉</div>
+        <h2 class="cursive glow" style="font-size:38px;color:var(--rose-3);margin:2px 0">Ikkalamiz uchun 2 ta Bilet!</h2>
+        <p class="sub" style="margin-bottom:8px">Demak, ertaga rejamiz 100% tayyor, jonim! ❤️</p>
+        
+        <div class="tickets-container">
+          <div class="ticket ticket-dragon">
+            <div class="tk-head"><span>🐉 DRAGON VIP CHIPTA</span><span style="color:var(--rose-3)">ADRENALIN &amp; BAXT</span></div>
+            <div class="tk-grid">
+              <div><small>Yo'lovchilar</small><b>Biz ikkimiz 👫</b></div>
+              <div><small>Joy</small><b style="color:var(--rose-3)">Eng oldingi o'rindiq 🎢</b></div>
+              <div><small>Vaqti</small><b>Ertaga ✨</b></div>
+              <div><small>Status</small><b style="color:#10b981">Tasdiqlandi 🎟️</b></div>
+            </div>
+          </div>
+
+          <div class="ticket ticket-perashka">
+            <div class="tk-head"><span>🥟 PERASHKA VIP KUPON</span><span style="color:var(--gold)">MAZALI LAHZA</span></div>
+            <div class="tk-grid">
+              <div><small>Buyurtma</small><b>Issiq Perashkalar 🥟</b></div>
+              <div><small>Ichimlik</small><b style="color:var(--gold)">Shirin Issiq Choy ☕</b></div>
+              <div><small>Hisob</small><b>Mendan cheksiz mehr ❤️</b></div>
+              <div><small>Status</small><b style="color:#10b981">Faollashtirildi ✨</b></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="cta" style="margin-top:6px" onclick="toast('Men ham seni dunyolarcha kooooooooop yaxshi ko\'raman! ❤️')">💌 "Men tayyorman, jonim!"</button>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- PASTKI HISOBLAGICH -->
+  <footer class="counter glass">
+    <div>
+      <small style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--rose-2);margin-bottom:2px">20.09.2025 dan buyon birgamiz ❤️</small>
+      <div class="cells">
+        <div class="cell"><b id="c-d">0</b><span>kun</span></div>
+        <div class="cell"><b id="c-h">00</b><span>soat</span></div>
+        <div class="cell"><b id="c-m">00</b><span>daqiqa</span></div>
+        <div class="cell"><b id="c-s">00</b><span>soniya</span></div>
+      </div>
+    </div>
+    <div id="remaining-photos-text" style="font-size:12px;color:var(--rose-3)">Qolgan rasmlar: 10 ta 📸</div>
+  </footer>
+</div>
+
+<!-- KATTA RASM VA MATN MODALI -->
+<div class="photo-modal" id="photo-modal">
+  <div class="photo-card glass">
+    <button class="photo-close" id="photo-close-btn">✕</button>
+    <div class="photo-img-box">
+      <img id="modal-img" src="" alt="Bizning rasmimiz">
+    </div>
+    <div class="photo-info">
+      <h3 id="modal-title">Xotira</h3>
+      <p id="modal-desc"></p>
+    </div>
+  </div>
+</div>
+
+<button id="music-btn" class="music-toggle glass">🎵 Qo'shiq: Yangramoqda</button>
+<div id="toast"></div>
+
+<script>
+/* ================= 1. SIZNING 10 TA XOTIRANGIZ ================= */
+const MEMORIES = [
+  { img: "rasmlar/rasm1.jpg", title: "1-Xotira ✨", desc: "Sen bilan birinchi marta yolg'iz oxisga borib unutilmas xotiralar bilan qaytdik." },
+  { img: "rasmlar/rasm2.jpg", title: "2-Xotira 💖", desc: "Sen bilan eng baxtli kunlarimizdan biri edi." },
+  { img: "rasmlar/rasm3.jpg", title: "3-Xotira 🌽😁", desc: "Sen bilan makka yegan kunimiz 😁" },
+  { img: "rasmlar/rasm4.jpg", title: "4-Xotira 🎁", desc: "Menga bergan sovg'ang hali hamon yodimda." },
+  { img: "rasmlar/rasm5.jpg", title: "5-Xotira 👰🤵", desc: "Ikkalamiz to'yga borib o'ynab kulib, bizning ham to'yimiz shunday bo'lishini istagandik." },
+  { img: "rasmlar/rasm6.jpg", title: "6-Xotira 🌹", desc: "Bizning 1 yilligimiz hali hamon esimda." },
+  { img: "rasmlar/rasm7.jpg", title: "7-Xotira 🥺❤️", desc: "3 oylik sog'inchdan keyin biz ko'rishgan 1 kunlik eng baxtli kunimiz." },
+  { img: "rasmlar/rasm8.jpg", title: "8-Xotira 🧺🌿", desc: "Sen bilan piknikka chiqqan vaqtimiz." },
+  { img: "rasmlar/rasm9.jpg", title: "9-Xotira 🗓️💕", desc: "Sen bilan 1 oylik bo'lgan kunimiz." },
+  { img: "rasmlar/rasm10.jpg", title: "10-Xotira 🎤🎶", desc: "Sen bilan birinchi karaoke borgan kunimiz." }
+];
+
+/* ================= 2. HAMMA JOYDA BEVOSITA BOSILADIGAN RASMLAR ================= */
+const flyingContainer = document.getElementById('flying-canvas');
+const photoObjects = [];
+let remainingCount = MEMORIES.length;
+let currentlyOpenedThumb = null;
+
+MEMORIES.forEach((m, idx) => {
+  const el = document.createElement('div');
+  el.className = 'floating-photo';
+  el.innerHTML = `
+    <img src="${m.img}" onerror="this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=200'" alt="${m.title}">
+    <span class="photo-badge">${idx + 1}</span>
+  `;
+
+  flyingContainer.appendChild(el);
+
+  const obj = {
+    el: el,
+    data: m,
+    x: 20 + Math.random() * (window.innerWidth - 120),
+    y: 20 + Math.random() * (window.innerHeight - 180),
+    vx: (Math.random() - 0.5) * 1.2 || 0.6,
+    vy: (Math.random() - 0.5) * 1.2 || 0.6,
+    paused: false,
+    visible: true
+  };
+
+  // Sichqoncha ustiga borganda to'xtaydi, qulay bosiladi
+  el.addEventListener('pointerenter', () => { obj.paused = true; });
+  el.addEventListener('pointerleave', () => { obj.paused = false; });
+
+  // Bosganda to'g'ridan-to'g'ri ochiladi
+  el.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    openPhotoModal(obj);
+  });
+
+  photoObjects.push(obj);
+});
+
+function updateFlyingPhotos() {
+  const W = window.innerWidth - 85;
+  const H = window.innerHeight - 85;
+
+  photoObjects.forEach(obj => {
+    if (!obj.visible) return;
+
+    if (!obj.paused) {
+      obj.x += obj.vx;
+      obj.y += obj.vy;
+
+      if (obj.x <= 10) { obj.x = 10; obj.vx *= -1; }
+      if (obj.x >= W)  { obj.x = W;  obj.vx *= -1; }
+      if (obj.y <= 10) { obj.y = 10; obj.vy *= -1; }
+      if (obj.y >= H)  { obj.y = H;  obj.vy *= -1; }
+    }
+
+    obj.el.style.left = `${obj.x}px`;
+    obj.el.style.top = `${obj.y}px`;
+  });
+
+  requestAnimationFrame(updateFlyingPhotos);
+}
+requestAnimationFrame(updateFlyingPhotos);
+
+/* ================= 3. RASMNI BOSGANDA KATTALASHIB, SO'NG YO'QOLISHI ================= */
+const photoModal = document.getElementById('photo-modal');
+const modalImg = document.getElementById('modal-img');
+const modalTitle = document.getElementById('modal-title');
+const modalDesc = document.getElementById('modal-desc');
+
+function openPhotoModal(obj) {
+  currentlyOpenedThumb = obj;
+  modalImg.src = obj.data.img;
+  modalImg.onerror = () => { modalImg.src = 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600'; };
+  modalTitle.textContent = obj.data.title;
+  modalDesc.textContent = obj.data.desc;
+  photoModal.classList.add('open');
+  confetti({ particleCount: 35, spread: 50, origin: { y: .5 } });
+}
+
+function closePhotoModal() {
+  if (photoModal.classList.contains('open')) {
+    photoModal.classList.remove('open');
+    if (currentlyOpenedThumb && currentlyOpenedThumb.visible) {
+      currentlyOpenedThumb.visible = false;
+      currentlyOpenedThumb.el.classList.add('hidden-photo');
+      remainingCount--;
+      document.getElementById('remaining-photos-text').textContent = `Qolgan rasmlar: ${remainingCount} ta 📸`;
+      if (remainingCount === 0) {
+        toast("Hamma xotiralarimizni ko'rib chiqding, jonim! ❤️✨");
+      }
+    }
+  }
+}
+document.getElementById('photo-close-btn').addEventListener('click', closePhotoModal);
+photoModal.addEventListener('click', e => { if (e.target === photoModal) closePhotoModal(); });
+
+/* ================= 4. QOCHUVCHI "YO'Q" TUGMALARI (HA ORQASIGA TUSHMAYDI) ================= */
+function setupFleeButton(noBtn, yesBtn, arena) {
+  let teaseTexts = ['Qochdim! 😜', 'Tutolmaysan! 💨', 'Faqat "HA" ni bos! 💕', 'Yo\'q deb bo\'lmaydi! 🙈', 'Iloji yo\'q! ✨'];
+  let count = 0;
+
+  function moveNo(e) {
+    if (e && e.cancelable) e.preventDefault();
+    noBtn.textContent = teaseTexts[count % teaseTexts.length];
+    count++;
+
+    const arenaRect = arena.getBoundingClientRect();
+    const yesRect = yesBtn.getBoundingClientRect();
+    const btnW = noBtn.offsetWidth;
+    const btnH = noBtn.offsetHeight;
+
+    const maxX = arenaRect.width - btnW - 10;
+    const maxY = arenaRect.height - btnH - 10;
+
+    let targetX, targetY;
+    let safe = false;
+    let attempts = 0;
+
+    while (!safe && attempts < 30) {
+      attempts++;
+      targetX = 8 + Math.random() * maxX;
+      targetY = 8 + Math.random() * maxY;
+
+      const checkRect = {
+        left: arenaRect.left + targetX,
+        right: arenaRect.left + targetX + btnW,
+        top: arenaRect.top + targetY,
+        bottom: arenaRect.top + targetY + btnH
+      };
+
+      const overlapsYes = !(
+        checkRect.right < (yesRect.left - 25) ||
+        checkRect.left > (yesRect.right + 25) ||
+        checkRect.bottom < (yesRect.top - 20) ||
+        checkRect.top > (yesRect.bottom + 20)
+      );
+
+      if (!overlapsYes) {
+        safe = true;
+      }
+    }
+
+    noBtn.style.left = `${targetX}px`;
+    noBtn.style.top = `${targetY}px`;
+    noBtn.style.transform = `rotate(${(Math.random() - .5) * 20}deg)`;
+
+    const sc = Math.min(1 + count * 0.05, 1.3);
+    yesBtn.style.transform = `translateY(-50%) scale(${sc})`;
+  }
+
+  ['pointerenter', 'pointerdown', 'touchstart', 'click'].forEach(ev => {
+    noBtn.addEventListener(ev, moveNo, { passive: false });
+  });
+}
+
+setupFleeButton(document.getElementById('no-1'), document.getElementById('yes-1'), document.getElementById('arena-1'));
+setupFleeButton(document.getElementById('no-2'), document.getElementById('yes-2'), document.getElementById('arena-2'));
+setupFleeButton(document.getElementById('no-3'), document.getElementById('yes-3'), document.getElementById('arena-3'));
+
+// Bosqichlar o'tishi
+document.getElementById('yes-1').addEventListener('click', () => {
+  confetti({ particleCount: 70, spread: 60, origin: { y: .6 } });
+  document.getElementById('step-1').classList.remove('on');
+  document.getElementById('step-2').classList.add('on');
+  toast("Dragon'ga uchadigan bo'ldik! 🐉🥰");
+});
+
+document.getElementById('yes-2').addEventListener('click', () => {
+  confetti({ particleCount: 80, spread: 65, origin: { y: .6 } });
+  document.getElementById('step-2').classList.remove('on');
+  document.getElementById('step-3').classList.add('on');
+  toast("Perashkani ham kelishdik! 🥟😋");
+});
+
+document.getElementById('yes-3').addEventListener('click', () => {
+  confetti({ particleCount: 180, spread: 100, origin: { y: .6 } });
+  document.getElementById('step-3').classList.remove('on');
+  document.getElementById('step-4').classList.add('on');
+  toast("MEN HAM SENI KOOOOOOOOOOP SEVAMAN! 💖");
+});
+
+/* ================= 5. MUSIQA VA INTRO ================= */
+const audio = document.getElementById('bg-audio');
+const musicBtn = document.getElementById('music-btn');
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('intro').classList.add('gone');
+  audio.play().catch(e => console.log("Audio avto-ijro:", e));
+  confetti({ particleCount: 80, spread: 70, origin: { y: .6 } });
+});
+
+musicBtn.addEventListener('click', () => {
+  if (audio.paused) {
+    audio.play();
+    musicBtn.textContent = '🎵 Qo\'shiq: Yangramoqda';
+  } else {
+    audio.pause();
+    musicBtn.textContent = '🔇 Qo\'shiq: To\'xtatildi';
+  }
+});
+
+/* ================= 6. 2025-09-20 KUNLAR HISOBLAGICHI ================= */
+const startDate = new Date(2025, 8, 20).getTime();
+function updateTimer() {
+  const diff = Math.max(0, Math.floor((Date.now() - startDate) / 1000));
+  document.getElementById('c-d').textContent = Math.floor(diff / 86400);
+  document.getElementById('c-h').textContent = String(Math.floor((diff % 86400) / 3600)).padStart(2, '0');
+  document.getElementById('c-m').textContent = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+  document.getElementById('c-s').textContent = String(diff % 60).padStart(2, '0');
+}
+setInterval(updateTimer, 1000);
+updateTimer();
+
+/* ================= 7. THREE.JS 3D YURAK ================= */
+let scene, camera, renderer, heartMesh;
+try {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.z = 11;
+
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl'), antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const light = new THREE.PointLight(0xff4d8d, 2.5, 30);
+  light.position.set(2, 3, 5);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+
+  const pts = [];
+  for (let i = 0; i <= 60; i++) {
+    const t = (i / 60) * Math.PI * 2;
+    const x = 16 * Math.pow(Math.sin(t), 3) / 13;
+    const y = (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) / 13;
+    pts.push(new THREE.Vector2(x, y));
+  }
+  const shape = new THREE.Shape(pts);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: true, bevelSegments: 6, steps: 1, bevelSize: 0.2, bevelThickness: 0.3 });
+  geo.center();
+  const mat = new THREE.MeshPhysicalMaterial({ color: 0xe11d48, roughness: 0.2, metalness: 0.1, clearcoat: 1 });
+  heartMesh = new THREE.Mesh(geo, mat);
+  scene.add(heartMesh);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = Date.now() * 0.002;
+    heartMesh.rotation.y = Math.sin(t * 0.7) * 0.45;
+    const beat = 1 + (Math.sin(t * 3.5) > 0.6 ? 0.08 : 0);
+    heartMesh.scale.set(beat, beat, beat);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+} catch(e) { console.log(e); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
